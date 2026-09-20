@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mock Test Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">📚 AI Mock Test Platform</h1>
+            <span id="header-status" class="text-sm bg-indigo-700 px-3 py-1 rounded-full">Ready</span>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-4 md:p-6">
+
+        <!-- SCREEN 1: UPLOAD & CONFIG -->
+        <section id="upload-screen" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold mb-4 text-slate-700">1. PDF अपलोड करें और टेस्ट सेटिंग्स चुनें</h2>
+            <form id="upload-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">क्वेश्चन PDF चुनें:</label>
+                    <input type="file" id="pdf-file" accept=".pdf" required class="w-full border p-2 rounded-lg bg-slate-50">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">प्रति सेट प्रश्न संख्या (Questions per Set):</label>
+                        <select id="qs-per-set" class="w-full border p-2 rounded-lg bg-slate-50">
+                            <option value="10">10 प्रश्न</option>
+                            <option value="25" selected>25 प्रश्न</option>
+                            <option value="50">50 प्रश्न</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">टेस्ट का समय (Minutes):</label>
+                        <input type="number" id="test-time" value="15" min="1" max="180" class="w-full border p-2 rounded-lg bg-slate-50" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="process-btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    PDF से टेस्ट जनरेट करें
+                </button>
+            </form>
+        </section>
+
+        <!-- SCREEN 2: SETS DASHBOARD (Hidden by default) -->
+        <section id="sets-screen" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold mb-2">2. अपना टेस्ट सेट चुनें</h2>
+            <p id="sets-info" class="text-sm text-slate-500 mb-4"></p>
+            <div id="sets-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- SCREEN 3: LIVE MOCK TEST (Hidden by default) -->
+        <section id="test-screen" class="hidden space-y-4">
+            <!-- Top Bar with Timer -->
+            <div class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center border border-slate-200">
+                <span id="test-title" class="font-bold text-indigo-600">Set 1 Test</span>
+                <div class="text-red-600 font-mono font-bold text-lg bg-red-50 px-3 py-1 rounded-md border border-red-200">
+                    ⏱️ <span id="timer">00:00</span>
+                </div>
+            </div>
+
+            <!-- Question Box -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center text-sm text-slate-500">
+                    <span>प्रश्न <span id="current-q-num">1</span> / <span id="total-q-num">10</span></span>
+                </div>
+                <h3 id="question-text" class="text-lg font-semibold text-slate-800"></h3>
+                <div id="options-container" class="space-y-2 mt-4"></div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-between items-center">
+                <button id="prev-btn" onclick="navigateQuestion(-1)" class="px-4 py-2 bg-slate-200 rounded-lg text-slate-700 font-medium">Previous</button>
+                <button id="next-btn" onclick="navigateQuestion(1)" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Next</button>
+                <button id="submit-btn" onclick="submitTest()" class="hidden px-4 py-2 bg-green-600 text-white rounded-lg font-medium">Finish & Submit</button>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: RESULT & EVALUATION (Hidden by default) -->
+        <section id="result-screen" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center space-y-2">
+                <h2 class="text-2xl font-bold text-slate-800">🎉 टेस्ट परिणाम (Test Result)</h2>
+                <p id="score-display" class="text-4xl font-extrabold text-indigo-600 my-2"></p>
+                <div id="stats-summary" class="flex justify-center gap-6 text-sm font-medium text-slate-600"></div>
+                <button onclick="backToSets()" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg">दूसरे सेट पर जाएँ</button>
+            </div>
+
+            <!-- Answer Key & Detailed Explanations -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">उत्तर और व्याख्या (Answer Sheet)</h3>
+                <div id="answers-breakdown" class="space-y-6"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const API_URL = "http://localhost:8000/api/process-pdf";
+        
+        let appData = { sets: [] };
+        let activeSet = null;
+        let currentQuestionIdx = 0;
+        let userAnswers = {};
+        let timerInterval = null;
+        let timeRemaining = 0;
+
+        // Form Submit -> Call Backend
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('pdf-file').files[0];
+            const qsPerSet = document.getElementById('qs-per-set').value;
+            const btn = document.getElementById('process-btn');
+
+            if(!fileInput) return alert("कृपया PDF चुनें");
+
+            const formData = new FormData();
+            formData.append('file', fileInput);
+            formData.append('questions_per_set', qsPerSet);
+
+            btn.innerText = "PDF प्रोसेस हो रही है...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if(data.success) {
+                    appData = data;
+                    showSetsScreen();
+                } else {
+                    alert("त्रुटि: " + data.detail);
+                }
+            } catch (err) {
+                alert("सर्वर से कनेक्ट करने में विफल! सुनिश्चित करें कि app.py चल रहा है।");
+            } finally {
+                btn.innerText = "PDF से टेस्ट जनरेट करें";
+                btn.disabled = false;
+            }
+        });
+
+        function showSetsScreen() {
+            document.getElementById('upload-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('test-screen').classList.add('hidden');
+            document.getElementById('sets-screen').classList.remove('hidden');
+
+            document.getElementById('sets-info').innerText = `कुल प्रश्न: ${appData.total_questions_found} | कुल सेट: ${appData.total_sets}`;
+            
+            const setsList = document.getElementById('sets-list');
+            setsList.innerHTML = '';
+
+            appData.sets.forEach((set) => {
+                const card = document.createElement('div');
+                card.className = "border p-4 rounded-lg flex justify-between items-center bg-slate-50";
+                card.innerHTML = `
+                    <div>
+                        <h4 class="font-bold text-slate-800">${set.title}</h4>
+                        <p class="text-sm text-slate-500">${set.total_questions} प्रश्न | Status: ${set.status}</p>
+                    </div>
+                    <button onclick="startTest(${set.set_id})" class="px-4 py-2 ${set.status === 'completed' ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg text-sm font-medium">
+                        ${set.status === 'completed' ? 'Re-test' : 'Start Test'}
+                    </button>
+                `;
+                setsList.appendChild(card);
+            });
+        }
+
+        function startTest(setId) {
+            activeSet = appData.sets.find(s => s.set_id === setId);
+            currentQuestionIdx = 0;
+            userAnswers = {};
+
+            const minutes = parseInt(document.getElementById('test-time').value) || 15;
+            timeRemaining = minutes * 60;
+
+            document.getElementById('sets-screen').classList.add('hidden');
+            document.getElementById('test-screen').classList.remove('hidden');
+            document.getElementById('test-title').innerText = activeSet.title;
+            document.getElementById('total-q-num').innerText = activeSet.total_questions;
+
+            startTimer();
+            renderQuestion();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const mins = Math.floor(timeRemaining / 60);
+                const secs = timeRemaining % 60;
+                document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert("समय समाप्त! आपका टेस्ट सबमिट किया जा रहा है।");
+                    submitTest();
+                }
+                timeRemaining--;
+            }, 1000);
+        }
+
+        function renderQuestion() {
+            const q = activeSet.questions[currentQuestionIdx];
+            document.getElementById('current-q-num').innerText = currentQuestionIdx + 1;
+            document.getElementById('question-text').innerText = `${currentQuestionIdx + 1}. ${q.question}`;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            q.options.forEach((opt) => {
+                const optKey = opt.trim().charAt(0); // Assuming options start with A), B), C), D)
+                const isSelected = userAnswers[currentQuestionIdx] === optKey;
+
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded-lg border transition ${isSelected ? 'bg-indigo-100 border-indigo-600 font-semibold' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`;
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    userAnswers[currentQuestionIdx] = optKey;
+                    renderQuestion();
+                };
+                optionsContainer.appendChild(btn);
+            });
+
+            // Nav Controls
+            document.getElementById('prev-btn').style.visibility = currentQuestionIdx === 0 ? 'hidden' : 'visible';
+            if (currentQuestionIdx === activeSet.questions.length - 1) {
+                document.getElementById('next-btn').classList.add('hidden');
+                document.getElementById('submit-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('next-btn').classList.remove('hidden');
+                document.getElementById('submit-btn').classList.add('hidden');
+            }
+        }
+
+        function navigateQuestion(direction) {
+            currentQuestionIdx += direction;
+            renderQuestion();
+        }
+
+        function submitTest() {
+            clearInterval(timerInterval);
+            activeSet.status = 'completed';
+
+            let score = 0;
+            let correctCount = 0;
+            let wrongCount = 0;
+            let unattempted = 0;
+
+            const breakdown = document.getElementById('answers-breakdown');
+            breakdown.innerHTML = '';
+
+            activeSet.questions.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                const isCorrect = userAns === q.correct_option;
+                
+                if (!userAns) unattempted++;
+                else if (isCorrect) { score++; correctCount++; }
+                else wrongCount++;
+
+                // Answer breakdown UI
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-lg border ${isCorrect ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`;
+                item.innerHTML = `
+                    <p class="font-bold text-slate-800">${idx + 1}. ${q.question}</p>
+                    <p class="text-sm mt-1">आपकी पसंद: <span class="font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}">${userAns || 'कोई उत्तर नहीं दिया'}</span></p>
+                    <p class="text-sm">सही उत्तर: <span class="font-bold text-green-700">${q.correct_option}</span></p>
+                    <div class="text-xs mt-2 bg-white p-2 rounded border border-slate-200 text-slate-600">
+                        <strong>व्याख्या:</strong> ${q.explanation || 'उपलब्ध नहीं है।'}
+                    </div>
+                `;
+                breakdown.appendChild(item);
+            });
+
+            document.getElementById('score-display').innerText = `${score} / ${activeSet.questions.length}`;
+            document.getElementById('stats-summary').innerHTML = `
+                <span class="text-green-600">सही: ${correctCount}</span> |
+                <span class="text-red-600">गलत: ${wrongCount}</span> |
+                <span class="text-slate-500">छोड़े गए: ${unattempted}</span>
+            `;
+
+            document.getElementById('test-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+
+        function backToSets() {
+            showSetsScreen();
+        }
+    </script>
+</body>
+</html>
