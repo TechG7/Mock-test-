@@ -25,7 +25,6 @@ async def process_pdf(
     questions_per_set: int = Form(25)
 ):
     try:
-        # 1. Read full PDF binary data using io.BytesIO
         contents = await file.read()
         pdf_bytes = io.BytesIO(contents)
         
@@ -37,24 +36,23 @@ async def process_pdf(
                     all_extracted_text += f"\n--- Page {i+1} ---\n" + page_text
 
         if not all_extracted_text.strip():
-            raise HTTPException(status_code=400, detail="PDF se text read nahi ho saka. Text/scanned PDF check karein.")
+            raise HTTPException(status_code=400, detail="PDF se text read nahi ho saka.")
 
-        # 2. Strict Prompt forcing AI to parse EVERY single question across all pages
         prompt = f"""
-        Task: You are an expert exam generator. Extract EVERY SINGLE multiple-choice question from ALL pages of the PDF text below.
-        CRITICAL: Do NOT skip any question. Do NOT stop early. Read from Page 1 to the last page.
+        Task: Extract EVERY SINGLE multiple-choice question from ALL pages of the PDF text below.
+        CRITICAL: Do NOT skip any question. Read from Page 1 to the last page.
 
         Instructions:
         1. Extract all questions found across all pages.
         2. Provide Bilingual output (English and Hindi). Translate if the original text is in only one language.
-        3. Make sure every question has 4 clear options (A, B, C, D) and a correct answer key with explanation.
+        3. Provide 4 clear options (A, B, C, D), correct option, and brief explanations.
 
         Return ONLY a valid JSON array of objects with these exact keys:
-        - "id": integer (1, 2, 3...)
+        - "id": integer
         - "question_en": string
         - "question_hi": string
-        - "options_en": list of 4 strings (e.g. ["A) ...", "B) ...", "C) ...", "D) ..."])
-        - "options_hi": list of 4 strings (e.g. ["A) ...", "B) ...", "C) ...", "D) ..."])
+        - "options_en": list of 4 strings (e.g. ["A) Option 1", "B) Option 2", ...])
+        - "options_hi": list of 4 strings (e.g. ["A) विकल्प 1", "B) विकल्प 2", ...])
         - "correct_option": string ("A", "B", "C", or "D")
         - "explanation_en": string
         - "explanation_hi": string
@@ -75,9 +73,8 @@ async def process_pdf(
         all_questions = json.loads(response.text)
 
         if not all_questions:
-            raise HTTPException(status_code=400, detail="PDF me se koi questions extract nahi ho paye.")
+            raise HTTPException(status_code=400, detail="PDF se questions parse nahi ho paye.")
 
-        # 3. Auto Chunking into Multiple Sets
         sets = []
         total_questions = len(all_questions)
         
@@ -88,8 +85,7 @@ async def process_pdf(
                 "set_id": set_number,
                 "title": f"Set {set_number} (Q.{i+1} to Q.{i+len(chunk)})",
                 "total_questions": len(chunk),
-                "questions": chunk,
-                "status": "pending"
+                "questions": chunk
             })
 
         return {
