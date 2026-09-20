@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Testbook Pro Ultra Engine</title>
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js)"></script>
-    <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap)" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .q-status-answered { background-color: #10b981; color: white; border-color: #059669; }
@@ -46,7 +46,7 @@
                 <div>
                     <span class="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">OCR & AI Powered</span>
                     <h2 class="text-xl font-extrabold text-slate-900 mt-1">Upload PDF, Image or Book Chapter</h2>
-                    <p class="text-xs text-slate-500">Supports PDF, JPG, PNG & Book theory chapters with auto OCR.</p>
+                    <p class="text-xs text-slate-500">Supports PDF, JPG, PNG & Book theory chapters with AI extraction.</p>
                 </div>
 
                 <form id="upload-form" class="space-y-4">
@@ -104,10 +104,10 @@
                     <span class="text-[10px] bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded font-bold uppercase">Smart Features</span>
                     <h3 class="text-base font-bold">Ultra Multi-Format AI Engine</h3>
                     <ul class="space-y-2 text-xs text-indigo-100">
-                        <li>✓ Scanned Book Photo / OCR Recognition</li>
+                        <li>✓ Scanned Book Photo & Direct Vision AI</li>
                         <li>✓ Theory Chapter to MCQ Generation Mode</li>
                         <li>✓ Export Printable Solution PDF</li>
-                        <li>✓ Bilingual Automatic Translation</li>
+                        <li>✓ Bilingual Automatic Translation (Hindi + English)</li>
                     </ul>
                 </div>
 
@@ -224,7 +224,7 @@
     </main>
 
     <script>
-        const API_URL = "[https://ai-mock-test-backend.onrender.com/api/process-pdf](https://ai-mock-test-backend.onrender.com/api/process-pdf)";
+        const API_URL = "https://ai-mock-test-backend.onrender.com/api/process-pdf";
         
         let savedPdfs = [];
         let activePdfId = null;
@@ -285,7 +285,8 @@
             document.getElementById('sets-screen').classList.add('hidden');
             document.getElementById('lang-switch-container').classList.add('hidden');
         }
-document.getElementById('upload-form').addEventListener('submit', async (e) => {
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const fileInput = document.getElementById('pdf-file').files[0];
             const qsPerSet = document.getElementById('qs-per-set').value;
