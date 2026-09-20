@@ -20,6 +20,20 @@ app.add_middleware(
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+def parse_gemini_json(text):
+    raw_text = text.strip()
+    if raw_text.startswith("```"):
+        raw_text = re.sub(r"^```[a-zA-Z]*\n?", "", raw_text)
+        raw_text = re.sub(r"\n?```$", "", raw_text)
+    
+    try:
+        return json.loads(raw_text, strict=False)
+    except Exception:
+        match = re.search(r'\[.*\]', raw_text, re.DOTALL)
+        if match:
+            return json.loads(match.group(0), strict=False)
+        raise
+
 @app.post("/api/process-pdf")
 async def process_pdf(
     file: UploadFile = File(...),
@@ -29,64 +43,67 @@ async def process_pdf(
         contents = await file.read()
         pdf_bytes = io.BytesIO(contents)
         
-        all_extracted_text = ""
+        pages_text = []
         with pdfplumber.open(pdf_bytes) as pdf:
             for i, page in enumerate(pdf.pages):
-                page_text = page.extract_text()
-                if page_text:
-                    all_extracted_text += f"\n--- Page {i+1} ---\n" + page_text
+                text = page.extract_text()
+                if text and text.strip():
+                    pages_text.append(f"--- Page {i+1} ---\n{text}")
 
-        if not all_extracted_text.strip():
+        if not pages_text:
             raise HTTPException(status_code=400, detail="PDF se text read nahi ho saka.")
 
-        prompt = f"""
-        Task: Extract EVERY SINGLE multiple-choice question from ALL pages of the PDF text below.
-        CRITICAL: Do NOT skip any question. Keep explanations short and concise to avoid output truncation. Do NOT use unescaped double quotes inside strings.
+        # Batch processing: 5 pages per API call to avoid token truncation
+        BATCH_SIZE = 5
+        all_questions = []
+        global_id = 1
 
-        Instructions:
-        1. Extract all questions found across all pages.
-        2. Provide Bilingual output (English and Hindi). Translate if missing.
-        3. Provide 4 clear options (A, B, C, D), correct option, and short explanations.
+        for b in range(0, len(pages_text), BATCH_SIZE):
+            batch_text = "\n\n".join(pages_text[b : b + BATCH_SIZE])
+            
+            prompt = f"""
+            Task: Extract ALL multiple-choice questions from this PDF chunk.
+            Instructions:
+            1. Provide Bilingual output (English and Hindi). Translate if missing.
+            2. Keep explanations short (max 1-2 lines).
+            3. Do not use unescaped double quotes inside text strings.
 
-        Return ONLY a valid JSON array of objects with these exact keys:
-        - "id": integer
-        - "question_en": string
-        - "question_hi": string
-        - "options_en": list of 4 strings (e.g. ["A) Option 1", "B) Option 2", ...])
-        - "options_hi": list of 4 strings (e.g. ["A) विकल्प 1", "B) विकल्प 2", ...])
-        - "correct_option": string ("A", "B", "C", or "D")
-        - "explanation_en": string
-        - "explanation_hi": string
+            Return ONLY a valid JSON array of objects with keys:
+            - "id": integer
+            - "question_en": string
+            - "question_hi": string
+            - "options_en": list of 4 strings (e.g. ["A) ...", "B) ...", "C) ...", "D) ..."])
+            - "options_hi": list of 4 strings (e.g. ["A) ...", "B) ...", "C) ...", "D) ..."])
+            - "correct_option": string ("A", "B", "C", or "D")
+            - "explanation_en": string
+            - "explanation_hi": string
 
-        PDF TEXT TO PROCESS:
-        {all_extracted_text}
-        """
+            PDF CHUNK TEXT:
+            {batch_text}
+            """
 
-        response = client.models.generate_content(
-            model='gemini-3.6-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                max_output_tokens=8192
-            )
-        )
-
-        raw_text = response.text.strip()
-        # Remove Markdown wrappers if present
-        if raw_text.startswith("```"):
-            raw_text = re.sub(r"^```[a-zA-Z]*\n?", "", raw_text)
-            raw_text = re.sub(r"\n?```$", "", raw_text)
-
-        try:
-            all_questions = json.loads(raw_text, strict=False)
-        except json.JSONDecodeError:
-            raise HTTPException(
-                status_code=500, 
-                detail="PDF me questions zyada hain. 'Questions / Set' filter me kam number try karein ya PDF split karein."
-            )
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        max_output_tokens=8192
+                    )
+                )
+                
+                chunk_qs = parse_gemini_json(response.text)
+                if isinstance(chunk_qs, list):
+                    for q in chunk_qs:
+                        q["id"] = global_id
+                        global_id += 1
+                        all_questions.append(q)
+            except Exception as batch_err:
+                print(f"Batch {b} error: {batch_err}")
+                continue
 
         if not all_questions:
-            raise HTTPException(status_code=400, detail="PDF se questions parse nahi ho paye.")
+            raise HTTPException(status_code=400, detail="PDF se questions extract nahi ho paaye. PDF quality check karein.")
 
         sets = []
         total_questions = len(all_questions)
