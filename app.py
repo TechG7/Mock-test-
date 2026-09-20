@@ -1,6 +1,7 @@
 import os
 import json
 import io
+import re
 import pdfplumber
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,12 +41,12 @@ async def process_pdf(
 
         prompt = f"""
         Task: Extract EVERY SINGLE multiple-choice question from ALL pages of the PDF text below.
-        CRITICAL: Do NOT skip any question. Read from Page 1 to the last page.
+        CRITICAL: Do NOT skip any question. Keep explanations short and concise to avoid output truncation. Do NOT use unescaped double quotes inside strings.
 
         Instructions:
         1. Extract all questions found across all pages.
-        2. Provide Bilingual output (English and Hindi). Translate if the original text is in only one language.
-        3. Provide 4 clear options (A, B, C, D), correct option, and brief explanations.
+        2. Provide Bilingual output (English and Hindi). Translate if missing.
+        3. Provide 4 clear options (A, B, C, D), correct option, and short explanations.
 
         Return ONLY a valid JSON array of objects with these exact keys:
         - "id": integer
@@ -70,7 +71,19 @@ async def process_pdf(
             )
         )
 
-        all_questions = json.loads(response.text)
+        raw_text = response.text.strip()
+        # Remove Markdown wrappers if present
+        if raw_text.startswith("```"):
+            raw_text = re.sub(r"^```[a-zA-Z]*\n?", "", raw_text)
+            raw_text = re.sub(r"\n?```$", "", raw_text)
+
+        try:
+            all_questions = json.loads(raw_text, strict=False)
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=500, 
+                detail="PDF me questions zyada hain. 'Questions / Set' filter me kam number try karein ya PDF split karein."
+            )
 
         if not all_questions:
             raise HTTPException(status_code=400, detail="PDF se questions parse nahi ho paye.")
@@ -95,6 +108,8 @@ async def process_pdf(
             "sets": sets
         }
 
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
