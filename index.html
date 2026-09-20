@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Testbook Pro Engine</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>AI Testbook Pro Ultra Engine</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js)"></script>
+    <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap)" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .q-status-answered { background-color: #10b981; color: white; border-color: #059669; }
@@ -21,14 +22,14 @@
     <!-- Header -->
     <header class="bg-indigo-900 text-white sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="showSetsScreen()">
                 <span class="bg-indigo-600 p-1.5 rounded-lg text-white font-black text-sm">⚡</span>
-                <h1 class="text-base font-extrabold tracking-tight">AI TESTBOOK <span class="text-indigo-400 font-normal text-xs">PRO</span></h1>
+                <h1 class="text-base font-extrabold tracking-tight">AI TESTBOOK <span class="text-indigo-400 font-normal text-xs">ULTRA</span></h1>
             </div>
 
             <div class="flex items-center gap-2">
                 <button onclick="showSetsScreen()" id="nav-dashboard-btn" class="hidden bg-indigo-800 hover:bg-indigo-700 text-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold">Dashboard</button>
-                <button onclick="showUploadScreen()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ New PDF</button>
+                <button onclick="showUploadScreen()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ New File / Image</button>
                 <div id="lang-switch-container" class="hidden flex bg-indigo-950 p-0.5 rounded-lg text-xs">
                     <button id="lang-hi" onclick="setLanguage('hi')" class="px-2.5 py-1 rounded bg-indigo-600 font-bold text-white">HI</button>
                     <button id="lang-en" onclick="setLanguage('en')" class="px-2.5 py-1 rounded text-indigo-300">EN</button>
@@ -39,25 +40,32 @@
 
     <main class="max-w-7xl mx-auto w-full p-3 md:p-6 flex-1">
 
-        <!-- SETUP & UPLOAD SCREEN -->
+        <!-- UPLOAD & PROCESSING SCREEN -->
         <section id="upload-screen" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div class="lg:col-span-7 bg-white p-5 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-5">
                 <div>
-                    <span class="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Step 1</span>
-                    <h2 class="text-xl font-extrabold text-slate-900 mt-1">Upload Exam PDF</h2>
-                    <p class="text-xs text-slate-500">Auto-extract questions and generate Hindi/English test sets.</p>
+                    <span class="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">OCR & AI Powered</span>
+                    <h2 class="text-xl font-extrabold text-slate-900 mt-1">Upload PDF, Image or Book Chapter</h2>
+                    <p class="text-xs text-slate-500">Supports PDF, JPG, PNG & Book theory chapters with auto OCR.</p>
                 </div>
 
                 <form id="upload-form" class="space-y-4">
                     <div class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/30 p-6 rounded-2xl text-center relative cursor-pointer">
-                        <input type="file" id="pdf-file" accept=".pdf" required class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        <input type="file" id="pdf-file" accept=".pdf,.png,.jpg,.jpeg,.webp" required class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                         <div class="space-y-1">
-                            <div class="text-2xl">📄</div>
-                            <p class="text-xs font-bold text-slate-700" id="file-label">Click or Drag & Drop PDF Here</p>
+                            <div class="text-3xl">📷 📄</div>
+                            <p class="text-xs font-bold text-slate-700" id="file-label">Click or Drag & Drop PDF / Image Here</p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Processing Mode</label>
+                            <select id="process-mode" class="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs font-semibold outline-none">
+                                <option value="extract" selected>Extract Question Paper / Image</option>
+                                <option value="generate">Generate MCQs from Theory Book</option>
+                            </select>
+                        </div>
                         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                             <label class="block text-[11px] font-bold text-slate-600 mb-1">Questions / Set</label>
                             <select id="qs-per-set" class="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs font-semibold outline-none">
@@ -67,6 +75,9 @@
                                 <option value="50">50 Questions</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                             <label class="block text-[11px] font-bold text-slate-600 mb-1">Timer (Mins)</label>
                             <input type="number" id="test-time" value="15" min="1" class="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs font-semibold outline-none" required>
@@ -83,27 +94,27 @@
                     </div>
 
                     <button type="submit" id="process-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md text-xs uppercase tracking-wider">
-                        ⚡ Generate All Test Sets
+                        ⚡ Process File & Generate Test
                     </button>
                 </form>
             </div>
 
             <div class="lg:col-span-5 space-y-4">
                 <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-sm space-y-3">
-                    <span class="text-[10px] bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded font-bold uppercase">Features</span>
-                    <h3 class="text-base font-bold">Pro Mock Test Platform</h3>
+                    <span class="text-[10px] bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded font-bold uppercase">Smart Features</span>
+                    <h3 class="text-base font-bold">Ultra Multi-Format AI Engine</h3>
                     <ul class="space-y-2 text-xs text-indigo-100">
-                        <li>✓ Automatic Hindi & English Translation</li>
-                        <li>✓ Auto-saved tests in Browser LocalStorage</li>
-                        <li>✓ Real Testbook Question Palette & Palette Colors</li>
-                        <li>✓ Detailed Scorecard & Instant Solution Key</li>
+                        <li>✓ Scanned Book Photo / OCR Recognition</li>
+                        <li>✓ Theory Chapter to MCQ Generation Mode</li>
+                        <li>✓ Export Printable Solution PDF</li>
+                        <li>✓ Bilingual Automatic Translation</li>
                     </ul>
                 </div>
 
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
                     <div>
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Saved Library</p>
-                        <h4 id="quick-saved-count" class="text-xl font-black text-slate-800">0 PDFs</h4>
+                        <h4 id="quick-saved-count" class="text-xl font-black text-slate-800">0 Items</h4>
                     </div>
                     <button onclick="showSetsScreen()" class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">View Library</button>
                 </div>
@@ -115,10 +126,10 @@
             <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
                 <div>
                     <h2 class="text-lg font-black text-slate-900">📚 Practice Test Library</h2>
-                    <p class="text-xs text-slate-500">Saare uploaded PDF test sets yahan saved hain.</p>
+                    <p class="text-xs text-slate-500">Saare uploaded PDF/Image sets yahan saved hain.</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="showUploadScreen()" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Add PDF</button>
+                    <button onclick="showUploadScreen()" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Add New</button>
                     <button onclick="clearAllHistory()" class="bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-xl">Clear History</button>
                 </div>
             </div>
@@ -176,7 +187,7 @@
             </div>
         </section>
 
-        <!-- RESULT SCREEN -->
+        <!-- RESULT & SOLUTION SCREEN -->
         <section id="result-screen" class="hidden space-y-4 max-w-4xl mx-auto">
             <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4">
                 <h2 class="text-xl font-black text-slate-900">🏆 Test Scorecard</h2>
@@ -198,10 +209,13 @@
                         <p id="wrong-display" class="text-xl font-black text-rose-700 mt-1">0</p>
                     </div>
                 </div>
-                <button onclick="showSetsScreen()" class="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">Back to Library</button>
+                <div class="flex justify-center gap-3">
+                    <button onclick="showSetsScreen()" class="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">Back to Library</button>
+                    <button onclick="exportSolutionPDF()" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">📄 Export Solution PDF</button>
+                </div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-3">
+            <div id="pdf-printable-area" class="bg-white p-6 rounded-2xl border border-slate-200 space-y-3">
                 <h3 class="text-sm font-extrabold text-slate-800 border-b pb-2">Solutions & Explanations</h3>
                 <div id="answers-breakdown" class="space-y-3"></div>
             </div>
@@ -210,7 +224,7 @@
     </main>
 
     <script>
-        const API_URL = "https://ai-mock-test-backend.onrender.com/api/process-pdf";
+        const API_URL = "[https://ai-mock-test-backend.onrender.com/api/process-pdf](https://ai-mock-test-backend.onrender.com/api/process-pdf)";
         
         let savedPdfs = [];
         let activePdfId = null;
@@ -252,7 +266,7 @@
 
         function updateQuickStats() {
             const countEl = document.getElementById('quick-saved-count');
-            if(countEl) countEl.innerText = `${savedPdfs.length} PDFs`;
+            if(countEl) countEl.innerText = `${savedPdfs.length} Items`;
         }
 
         function clearAllHistory() {
@@ -271,21 +285,22 @@
             document.getElementById('sets-screen').classList.add('hidden');
             document.getElementById('lang-switch-container').classList.add('hidden');
         }
-
-        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const fileInput = document.getElementById('pdf-file').files[0];
             const qsPerSet = document.getElementById('qs-per-set').value;
+            const procMode = document.getElementById('process-mode').value;
             negValue = parseFloat(document.getElementById('negative-mark').value);
             const btn = document.getElementById('process-btn');
 
-            if(!fileInput) return alert("Select a PDF file.");
+            if(!fileInput) return alert("Select a PDF or Image file.");
 
             const formData = new FormData();
             formData.append('file', fileInput);
             formData.append('questions_per_set', qsPerSet);
+            formData.append('mode', procMode);
 
-            btn.innerText = "⏳ Generating All Sets...";
+            btn.innerText = "⏳ Processing File & AI Extraction...";
             btn.disabled = true;
 
             try {
@@ -311,7 +326,7 @@
             } catch (err) {
                 alert("Server Connection Error!");
             } finally {
-                btn.innerText = "⚡ Generate All Test Sets";
+                btn.innerText = "⚡ Process File & Generate Test";
                 btn.disabled = false;
             }
         });
@@ -554,6 +569,18 @@
 
             document.getElementById('test-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.remove('hidden');
+        }
+
+        function exportSolutionPDF() {
+            const element = document.getElementById('pdf-printable-area');
+            const opt = {
+                margin:       0.5,
+                filename:     `${activeSet.title}_Solution.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
         }
     </script>
 </body>
