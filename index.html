@@ -3,118 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Mock Test Generator</title>
+    <title>Testbook Style AI Mock Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .q-status-answered { background-color: #22c55e; color: white; }
+        .q-status-not-answered { background-color: #ef4444; color: white; }
+        .q-status-review { background-color: #a855f7; color: white; }
+        .q-status-not-visited { background-color: #e2e8f0; color: #475569; }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
 
-    <!-- Header -->
-    <header class="bg-indigo-600 text-white p-4 shadow-md">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold">📚 AI Mock Test Platform</h1>
-            <span id="header-status" class="text-sm bg-indigo-700 px-3 py-1 rounded-full">Ready</span>
+    <!-- Top Header -->
+    <header class="bg-indigo-700 text-white p-3 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold flex items-center gap-2">📝 AI Testbook Platform</h1>
+            
+            <!-- Language Switcher -->
+            <div id="lang-switch-container" class="hidden flex items-center bg-indigo-800 rounded-lg p-1 text-xs">
+                <span class="mr-2 px-2 text-indigo-200">भाषा / Language:</span>
+                <button id="lang-hi" onclick="setLanguage('hi')" class="px-3 py-1 rounded bg-indigo-600 font-bold">हिंदी</button>
+                <button id="lang-en" onclick="setLanguage('en')" class="px-3 py-1 rounded">English</button>
+            </div>
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto p-4 md:p-6">
+    <main class="max-w-7xl mx-auto p-3 md:p-6">
 
-        <!-- SCREEN 1: UPLOAD & CONFIG -->
-        <section id="upload-screen" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 class="text-lg font-bold mb-4 text-slate-700">1. PDF अपलोड करें और टेस्ट सेटिंग्स चुनें</h2>
+        <!-- SCREEN 1: SETUP & UPLOAD -->
+        <section id="upload-screen" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
+            <h2 class="text-lg font-bold mb-4 text-indigo-700 border-b pb-2">1. टेस्ट कॉन्फ़िगरेशन (Test Setup)</h2>
             <form id="upload-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">क्वेश्चन PDF चुनें:</label>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">क्वेश्चन PDF अपलोड करें:</label>
                     <input type="file" id="pdf-file" accept=".pdf" required class="w-full border p-2 rounded-lg bg-slate-50">
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">प्रति सेट प्रश्न संख्या (Questions per Set):</label>
-                        <select id="qs-per-set" class="w-full border p-2 rounded-lg bg-slate-50">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">प्रति सेट प्रश्न:</label>
+                        <select id="qs-per-set" class="w-full border p-2 rounded-lg bg-slate-50 text-sm">
                             <option value="10">10 प्रश्न</option>
                             <option value="25" selected>25 प्रश्न</option>
                             <option value="50">50 प्रश्न</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">टेस्ट का समय (Minutes):</label>
-                        <input type="number" id="test-time" value="15" min="1" max="180" class="w-full border p-2 rounded-lg bg-slate-50" required>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">समय (Minutes):</label>
+                        <input type="number" id="test-time" value="15" min="1" class="w-full border p-2 rounded-lg bg-slate-50 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">नेगेटिव मार्किंग:</label>
+                        <select id="negative-mark" class="w-full border p-2 rounded-lg bg-slate-50 text-sm">
+                            <option value="0">कोई नहीं (0)</option>
+                            <option value="0.25" selected>-0.25 (1/4th)</option>
+                            <option value="0.33">-0.33 (1/3rd)</option>
+                            <option value="0.50">-0.50 (1/2)</option>
+                        </select>
                     </div>
                 </div>
 
                 <button type="submit" id="process-btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
-                    PDF से टेस्ट जनरेट करें
+                    🚀 टेस्ट जनरेट करें
                 </button>
             </form>
         </section>
 
-        <!-- SCREEN 2: SETS DASHBOARD (Hidden by default) -->
+        <!-- SCREEN 2: SETS DASHBOARD -->
         <section id="sets-screen" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 class="text-lg font-bold mb-2">2. अपना टेस्ट सेट चुनें</h2>
+            <h2 class="text-lg font-bold mb-2 text-slate-800">2. अपना टेस्ट सेलेक्ट करें</h2>
             <p id="sets-info" class="text-sm text-slate-500 mb-4"></p>
             <div id="sets-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
-        <!-- SCREEN 3: LIVE MOCK TEST (Hidden by default) -->
-        <section id="test-screen" class="hidden space-y-4">
-            <!-- Top Bar with Timer -->
-            <div class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center border border-slate-200">
-                <span id="test-title" class="font-bold text-indigo-600">Set 1 Test</span>
-                <div class="text-red-600 font-mono font-bold text-lg bg-red-50 px-3 py-1 rounded-md border border-red-200">
-                    ⏱️ <span id="timer">00:00</span>
+        <!-- SCREEN 3: TESTBOOK TEST ENGINE -->
+        <section id="test-screen" class="hidden grid grid-cols-1 lg:grid-cols-4 gap-4">
+            
+            <!-- Left Side: Question Area (3 Cols) -->
+            <div class="lg:col-span-3 space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                    <span id="test-title" class="font-bold text-indigo-700">Set 1</span>
+                    <div class="text-red-600 font-mono font-bold text-lg bg-red-50 px-3 py-1 rounded border border-red-200">
+                        ⏱️ <span id="timer">00:00</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4 min-h-[350px]">
+                    <div class="flex justify-between items-center text-sm border-b pb-2">
+                        <span class="font-semibold text-indigo-600">प्रश्न संख्या: <span id="current-q-num">1</span> / <span id="total-q-num">10</span></span>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">अंक: +1 | <span id="neg-display">-0.25</span></span>
+                    </div>
+                    <h3 id="question-text" class="text-base md:text-lg font-medium text-slate-800 leading-relaxed"></h3>
+                    <div id="options-container" class="space-y-2 mt-4"></div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border flex flex-wrap gap-2 justify-between items-center">
+                    <div class="flex gap-2">
+                        <button onclick="markForReview()" class="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">Mark for Review & Next</button>
+                        <button onclick="clearResponse()" class="px-3 py-2 bg-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-300">Clear Response</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="prev-btn" onclick="navigateQuestion(-1)" class="px-4 py-2 bg-slate-200 text-slate-700 font-medium rounded-lg">Previous</button>
+                        <button id="next-btn" onclick="navigateQuestion(1)" class="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg">Save & Next</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Question Box -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex justify-between items-center text-sm text-slate-500">
-                    <span>प्रश्न <span id="current-q-num">1</span> / <span id="total-q-num">10</span></span>
+            <!-- Right Side: Question Palette (1 Col) -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border space-y-4 h-fit">
+                <h4 class="font-bold text-slate-700 border-b pb-2 text-sm">प्रश्न पैलेट (Question Palette)</h4>
+                
+                <!-- Status Indicators -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span> उत्तर दिया</div>
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span> उत्तर नहीं दिया</div>
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span> मार्क फॉर रिव्यू</div>
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-slate-200 inline-block"></span> नहीं देखा</div>
                 </div>
-                <h3 id="question-text" class="text-lg font-semibold text-slate-800"></h3>
-                <div id="options-container" class="space-y-2 mt-4"></div>
-            </div>
 
-            <!-- Controls -->
-            <div class="flex justify-between items-center">
-                <button id="prev-btn" onclick="navigateQuestion(-1)" class="px-4 py-2 bg-slate-200 rounded-lg text-slate-700 font-medium">Previous</button>
-                <button id="next-btn" onclick="navigateQuestion(1)" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Next</button>
-                <button id="submit-btn" onclick="submitTest()" class="hidden px-4 py-2 bg-green-600 text-white rounded-lg font-medium">Finish & Submit</button>
+                <hr>
+
+                <!-- Question Grid -->
+                <div id="palette-grid" class="grid grid-cols-5 gap-2 max-h-60 overflow-y-auto p-1"></div>
+
+                <button onclick="confirmSubmit()" class="w-full mt-4 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition">
+                    Submit Test
+                </button>
             </div>
         </section>
 
-        <!-- SCREEN 4: RESULT & EVALUATION (Hidden by default) -->
+        <!-- SCREEN 4: ADVANCED RESULT & SOLUTIONS -->
         <section id="result-screen" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center space-y-2">
-                <h2 class="text-2xl font-bold text-slate-800">🎉 टेस्ट परिणाम (Test Result)</h2>
-                <p id="score-display" class="text-4xl font-extrabold text-indigo-600 my-2"></p>
-                <div id="stats-summary" class="flex justify-center gap-6 text-sm font-medium text-slate-600"></div>
-                <button onclick="backToSets()" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg">दूसरे सेट पर जाएँ</button>
+            <div class="bg-white p-6 rounded-xl shadow-sm border text-center space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800">🏆 टेस्ट स्कोरकार्ड (Scorecard)</h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-4">
+                    <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                        <p class="text-xs text-indigo-600 font-bold uppercase">कुल स्कोर (Total Score)</p>
+                        <p id="score-display" class="text-3xl font-extrabold text-indigo-700 mt-1">0</p>
+                    </div>
+                    <div class="p-4 bg-green-50 border border-green-100 rounded-xl">
+                        <p class="text-xs text-green-600 font-bold uppercase">सटीकता (Accuracy)</p>
+                        <p id="accuracy-display" class="text-3xl font-extrabold text-green-700 mt-1">0%</p>
+                    </div>
+                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                        <p class="text-xs text-emerald-600 font-bold uppercase">सही (Correct)</p>
+                        <p id="correct-display" class="text-3xl font-extrabold text-emerald-700 mt-1">0</p>
+                    </div>
+                    <div class="p-4 bg-red-50 border border-red-100 rounded-xl">
+                        <p class="text-xs text-red-600 font-bold uppercase">गलत (Wrong)</p>
+                        <p id="wrong-display" class="text-3xl font-extrabold text-red-700 mt-1">0</p>
+                    </div>
+                </div>
+
+                <button onclick="showSetsScreen()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium">अन्य सेट हल करें</button>
             </div>
 
-            <!-- Answer Key & Detailed Explanations -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 class="text-lg font-bold mb-4 text-slate-800">उत्तर और व्याख्या (Answer Sheet)</h3>
-                <div id="answers-breakdown" class="space-y-6"></div>
+            <!-- Answer Sheet -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 border-b pb-2">विस्तृत समाधान (Detailed Solutions)</h3>
+                <div id="answers-breakdown" class="space-y-4"></div>
             </div>
         </section>
 
     </main>
 
     <script>
+        // RENDER BACKEND URL (यहाँ अपना Render वाला बैकएंड URL रखें)
         const API_URL = "https://ai-mock-test-backend.onrender.com/api/process-pdf";
         
         let appData = { sets: [] };
         let activeSet = null;
         let currentQuestionIdx = 0;
-        let userAnswers = {};
+        let currentLang = 'hi'; // Default Language
+        let userAnswers = {}; // { qIdx: "A" }
+        let questionStates = {}; // { qIdx: 'answered' | 'not-answered' | 'review' }
         let timerInterval = null;
         let timeRemaining = 0;
+        let negValue = 0.25;
 
-        // Form Submit -> Call Backend
         document.getElementById('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const fileInput = document.getElementById('pdf-file').files[0];
             const qsPerSet = document.getElementById('qs-per-set').value;
+            negValue = parseFloat(document.getElementById('negative-mark').value);
             const btn = document.getElementById('process-btn');
 
             if(!fileInput) return alert("कृपया PDF चुनें");
@@ -134,12 +207,12 @@
                     appData = data;
                     showSetsScreen();
                 } else {
-                    alert("त्रुटि: " + data.detail);
+                    alert("त्रुटि: " + (data.detail || "PDF प्रोसेस नहीं हो पाई।"));
                 }
             } catch (err) {
-                alert("सर्वर से कनेक्ट करने में विफल! सुनिश्चित करें कि app.py चल रहा है।");
+                alert("सर्वर कनेक्ट नहीं हुआ! सुनिश्चित करें कि Render बैकएंड चल रहा है।");
             } finally {
-                btn.innerText = "PDF से टेस्ट जनरेट करें";
+                btn.innerText = "🚀 टेस्ट जनरेट करें";
                 btn.disabled = false;
             }
         });
@@ -148,6 +221,7 @@
             document.getElementById('upload-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.add('hidden');
             document.getElementById('test-screen').classList.add('hidden');
+            document.getElementById('lang-switch-container').classList.add('hidden');
             document.getElementById('sets-screen').classList.remove('hidden');
 
             document.getElementById('sets-info').innerText = `कुल प्रश्न: ${appData.total_questions_found} | कुल सेट: ${appData.total_sets}`;
@@ -157,32 +231,47 @@
 
             appData.sets.forEach((set) => {
                 const card = document.createElement('div');
-                card.className = "border p-4 rounded-lg flex justify-between items-center bg-slate-50";
+                card.className = "border p-4 rounded-xl flex justify-between items-center bg-slate-50";
                 card.innerHTML = `
                     <div>
                         <h4 class="font-bold text-slate-800">${set.title}</h4>
-                        <p class="text-sm text-slate-500">${set.total_questions} प्रश्न | Status: ${set.status}</p>
+                        <p class="text-xs text-slate-500">${set.total_questions} प्रश्न | Status: ${set.status}</p>
                     </div>
-                    <button onclick="startTest(${set.set_id})" class="px-4 py-2 ${set.status === 'completed' ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg text-sm font-medium">
-                        ${set.status === 'completed' ? 'Re-test' : 'Start Test'}
+                    <button onclick="startTest(${set.set_id})" class="px-4 py-2 ${set.status === 'completed' ? 'bg-slate-500' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg text-xs font-bold">
+                        ${set.status === 'completed' ? 'Re-attempt' : 'Start Test'}
                     </button>
                 `;
                 setsList.appendChild(card);
             });
         }
 
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('lang-hi').className = lang === 'hi' ? 'px-3 py-1 rounded bg-indigo-600 font-bold' : 'px-3 py-1 rounded';
+            document.getElementById('lang-en').className = lang === 'en' ? 'px-3 py-1 rounded bg-indigo-600 font-bold' : 'px-3 py-1 rounded';
+            if(activeSet) renderQuestion();
+        }
+
         function startTest(setId) {
             activeSet = appData.sets.find(s => s.set_id === setId);
             currentQuestionIdx = 0;
             userAnswers = {};
+            questionStates = {};
+
+            // Initialize question states as not-visited
+            activeSet.questions.forEach((_, i) => questionStates[i] = 'not-visited');
+            questionStates[0] = 'not-answered';
 
             const minutes = parseInt(document.getElementById('test-time').value) || 15;
             timeRemaining = minutes * 60;
 
             document.getElementById('sets-screen').classList.add('hidden');
             document.getElementById('test-screen').classList.remove('hidden');
+            document.getElementById('lang-switch-container').classList.remove('hidden');
+            
             document.getElementById('test-title').innerText = activeSet.title;
             document.getElementById('total-q-num').innerText = activeSet.total_questions;
+            document.getElementById('neg-display').innerText = `-${negValue}`;
 
             startTimer();
             renderQuestion();
@@ -197,7 +286,7 @@
                 
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
-                    alert("समय समाप्त! आपका टेस्ट सबमिट किया जा रहा है।");
+                    alert("समय समाप्त! आपका टेस्ट सबमिट हो रहा है।");
                     submitTest();
                 }
                 timeRemaining--;
@@ -207,46 +296,97 @@
         function renderQuestion() {
             const q = activeSet.questions[currentQuestionIdx];
             document.getElementById('current-q-num').innerText = currentQuestionIdx + 1;
-            document.getElementById('question-text').innerText = `${currentQuestionIdx + 1}. ${q.question}`;
+
+            const qText = currentLang === 'hi' ? (q.question_hi || q.question_en) : (q.question_en || q.question_hi);
+            const opts = currentLang === 'hi' ? (q.options_hi || q.options_en) : (q.options_en || q.options_hi);
+
+            document.getElementById('question-text').innerText = `${currentQuestionIdx + 1}. ${qText}`;
 
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.innerHTML = '';
 
-            q.options.forEach((opt) => {
-                const optKey = opt.trim().charAt(0); // Assuming options start with A), B), C), D)
+            opts.forEach((opt) => {
+                const optKey = opt.trim().charAt(0);
                 const isSelected = userAnswers[currentQuestionIdx] === optKey;
 
                 const btn = document.createElement('button');
-                btn.className = `w-full text-left p-3 rounded-lg border transition ${isSelected ? 'bg-indigo-100 border-indigo-600 font-semibold' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`;
+                btn.className = `w-full text-left p-3 rounded-lg border text-sm transition ${isSelected ? 'bg-indigo-100 border-indigo-600 font-semibold text-indigo-900' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`;
                 btn.innerText = opt;
                 btn.onclick = () => {
                     userAnswers[currentQuestionIdx] = optKey;
+                    questionStates[currentQuestionIdx] = 'answered';
                     renderQuestion();
                 };
                 optionsContainer.appendChild(btn);
             });
 
-            // Nav Controls
-            document.getElementById('prev-btn').style.visibility = currentQuestionIdx === 0 ? 'hidden' : 'visible';
-            if (currentQuestionIdx === activeSet.questions.length - 1) {
-                document.getElementById('next-btn').classList.add('hidden');
-                document.getElementById('submit-btn').classList.remove('hidden');
-            } else {
-                document.getElementById('next-btn').classList.remove('hidden');
-                document.getElementById('submit-btn').classList.add('hidden');
-            }
+            renderPalette();
         }
 
-        function navigateQuestion(direction) {
-            currentQuestionIdx += direction;
+        function renderPalette() {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+
+            activeSet.questions.forEach((_, idx) => {
+                const state = questionStates[idx] || 'not-visited';
+                let btnClass = 'q-status-not-visited';
+
+                if (state === 'answered') btnClass = 'q-status-answered';
+                else if (state === 'not-answered') btnClass = 'q-status-not-answered';
+                else if (state === 'review') btnClass = 'q-status-review';
+
+                const isCurrent = idx === currentQuestionIdx;
+                const border = isCurrent ? 'ring-2 ring-indigo-700 ring-offset-1 font-bold' : '';
+
+                const btn = document.createElement('button');
+                btn.className = `w-8 h-8 text-xs rounded-md ${btnClass} ${border} flex items-center justify-center font-medium`;
+                btn.innerText = idx + 1;
+                btn.onclick = () => {
+                    if(questionStates[currentQuestionIdx] === 'not-visited') questionStates[currentQuestionIdx] = 'not-answered';
+                    currentQuestionIdx = idx;
+                    if(questionStates[currentQuestionIdx] === 'not-visited') questionStates[currentQuestionIdx] = 'not-answered';
+                    renderQuestion();
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        function navigateQuestion(dir) {
+            if(!userAnswers[currentQuestionIdx] && questionStates[currentQuestionIdx] !== 'review') {
+                questionStates[currentQuestionIdx] = 'not-answered';
+            }
+
+            currentQuestionIdx += dir;
+            if(currentQuestionIdx < 0) currentQuestionIdx = 0;
+            if(currentQuestionIdx >= activeSet.questions.length) currentQuestionIdx = activeSet.questions.length - 1;
+
+            if(questionStates[currentQuestionIdx] === 'not-visited') {
+                questionStates[currentQuestionIdx] = 'not-answered';
+            }
             renderQuestion();
+        }
+
+        function markForReview() {
+            questionStates[currentQuestionIdx] = 'review';
+            navigateQuestion(1);
+        }
+
+        function clearResponse() {
+            delete userAnswers[currentQuestionIdx];
+            questionStates[currentQuestionIdx] = 'not-answered';
+            renderQuestion();
+        }
+
+        function confirmSubmit() {
+            if(confirm("क्या आप वाकई टेस्ट सबमिट करना चाहते हैं?")) {
+                submitTest();
+            }
         }
 
         function submitTest() {
             clearInterval(timerInterval);
             activeSet.status = 'completed';
 
-            let score = 0;
             let correctCount = 0;
             let wrongCount = 0;
             let unattempted = 0;
@@ -259,36 +399,36 @@
                 const isCorrect = userAns === q.correct_option;
                 
                 if (!userAns) unattempted++;
-                else if (isCorrect) { score++; correctCount++; }
+                else if (isCorrect) correctCount++;
                 else wrongCount++;
 
-                // Answer breakdown UI
+                const qText = currentLang === 'hi' ? (q.question_hi || q.question_en) : (q.question_en || q.question_hi);
+                const expText = currentLang === 'hi' ? (q.explanation_hi || q.explanation_en) : (q.explanation_en || q.explanation_hi);
+
                 const item = document.createElement('div');
-                item.className = `p-4 rounded-lg border ${isCorrect ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`;
+                item.className = `p-4 rounded-xl border text-sm ${isCorrect ? 'border-green-300 bg-green-50' : userAns ? 'border-red-300 bg-red-50' : 'border-slate-300 bg-slate-50'}`;
                 item.innerHTML = `
-                    <p class="font-bold text-slate-800">${idx + 1}. ${q.question}</p>
-                    <p class="text-sm mt-1">आपकी पसंद: <span class="font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}">${userAns || 'कोई उत्तर नहीं दिया'}</span></p>
-                    <p class="text-sm">सही उत्तर: <span class="font-bold text-green-700">${q.correct_option}</span></p>
+                    <p class="font-bold text-slate-800">${idx + 1}. ${qText}</p>
+                    <p class="mt-1">आपका उत्तर: <span class="font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}">${userAns || 'कोई उत्तर नहीं'}</span></p>
+                    <p>सही उत्तर: <span class="font-bold text-green-700">${q.correct_option}</span></p>
                     <div class="text-xs mt-2 bg-white p-2 rounded border border-slate-200 text-slate-600">
-                        <strong>व्याख्या:</strong> ${q.explanation || 'उपलब्ध नहीं है।'}
+                        <strong>व्याख्या:</strong> ${expText || 'कोई व्याख्या उपलब्ध नहीं।'}
                     </div>
                 `;
                 breakdown.appendChild(item);
             });
 
-            document.getElementById('score-display').innerText = `${score} / ${activeSet.questions.length}`;
-            document.getElementById('stats-summary').innerHTML = `
-                <span class="text-green-600">सही: ${correctCount}</span> |
-                <span class="text-red-600">गलत: ${wrongCount}</span> |
-                <span class="text-slate-500">छोड़े गए: ${unattempted}</span>
-            `;
+            const totalScore = (correctCount * 1) - (wrongCount * negValue);
+            const totalAttempted = correctCount + wrongCount;
+            const accuracy = totalAttempted > 0 ? Math.round((correctCount / totalAttempted) * 100) : 0;
+
+            document.getElementById('score-display').innerText = `${totalScore.toFixed(2)} / ${activeSet.questions.length}`;
+            document.getElementById('accuracy-display').innerText = `${accuracy}%`;
+            document.getElementById('correct-display').innerText = correctCount;
+            document.getElementById('wrong-display').innerText = wrongCount;
 
             document.getElementById('test-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.remove('hidden');
-        }
-
-        function backToSets() {
-            showSetsScreen();
         }
     </script>
 </body>
