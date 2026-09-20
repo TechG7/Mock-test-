@@ -8,7 +8,6 @@ from google.genai import types
 
 app = FastAPI()
 
-# Enable CORS for Frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,7 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Gemini API Client Setup (Set your GEMINI_API_KEY environment variable)
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def extract_text_from_pdf(file_bytes):
@@ -33,23 +31,26 @@ async def process_pdf(
     questions_per_set: int = Form(25)
 ):
     try:
-        # 1. Read PDF Text
         pdf_text = extract_text_from_pdf(file.file)
         if not pdf_text.strip():
-            raise HTTPException(status_code=400, detail="Could not read text from PDF.")
+            raise HTTPException(status_code=400, detail="PDF में टेक्स्ट नहीं मिला।")
 
-        # 2. Prompt Gemini API to parse MCQs into JSON
         prompt = f"""
-        Extract all multiple choice questions from the following text and return ONLY a JSON array.
-        Each object must have:
+        Extract all multiple-choice questions from the provided text and convert them into a Bilingual (English and Hindi) JSON array.
+        If the original text is only in English or Hindi, translate and provide both versions.
+
+        Return ONLY a JSON array where each object has:
         - "id": integer
-        - "question": string
-        - "options": list of 4 strings (e.g. ["A) Option 1", "B) Option 2", ...])
+        - "question_en": string (English)
+        - "question_hi": string (Hindi)
+        - "options_en": list of 4 strings (e.g. ["A) Option 1", "B) Option 2", ...])
+        - "options_hi": list of 4 strings (e.g. ["A) विकल्प 1", "B) विकल्प 2", ...])
         - "correct_option": string (e.g. "A", "B", "C", or "D")
-        - "explanation": string (brief explanation of the answer)
+        - "explanation_en": string (brief explanation in English)
+        - "explanation_hi": string (brief explanation in Hindi)
 
         PDF Content:
-        {pdf_text[:15000]}  # Limiting token length for stability
+        {pdf_text[:20000]}
         """
 
         response = client.models.generate_content(
@@ -62,7 +63,6 @@ async def process_pdf(
 
         all_questions = json.loads(response.text)
 
-        # 3. Split questions into Sets (Chunking)
         sets = []
         total_questions = len(all_questions)
         
